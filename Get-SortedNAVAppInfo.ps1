@@ -56,26 +56,28 @@ function Convert-SingleNode {
 function Get-NAVAppInfoPublishOrder {
     Param(
         [Parameter(Mandatory = $true)]
-        [string]$Path
+        [string[]]$Path
     )
-    $Paths = Resolve-Path $Path
-    $appInfoList = foreach ($Path in $Paths) {
-        Write-Host "Reading App Info from $Path"
-        $app = Get-NAVAppInfo -Path $Path
-        $dependencies = foreach ($dependency in $app.Dependencies) {
-            [PSCustomObject]@{
-                AppId = [guid]$dependency.AppId # Cast to guid
-                Name  = $dependency.Name
+    $appInfoList = foreach ($singlePath in $Path) {
+        $resolvedPaths = Resolve-Path $singlePath
+        foreach ($resolvedPath in $resolvedPaths) {
+            Write-Host "Reading App Info from $resolvedPath"
+            $app = Get-NAVAppInfo -Path $resolvedPath
+            $dependencies = foreach ($dependency in $app.Dependencies) {
+                [PSCustomObject]@{
+                    AppId = [guid]$dependency.AppId # Cast to guid
+                    Name  = $dependency.Name
+                }
             }
+            $result = [PSCustomObject]@{
+                Name         = $app.Name
+                Version      = $app.Version
+                AppId        = [guid]$app.AppId.Value # Cast to guid
+                Dependencies = $dependencies
+                Path         = $resolvedPath
+            }
+            $result
         }
-        $result = [PSCustomObject]@{
-            Name         = $app.Name
-            Version      = $app.Version
-            AppId        = [guid]$app.AppId.Value # Cast to guid
-            Dependencies = $dependencies
-            Path         = $Path
-        }
-        $result
     }
     Get-SortedNAVAppInfo -appInfoList $appInfoList
 }
