@@ -52,7 +52,7 @@ Describe "Get-SortedNAVAppInfo Tests" {
         $app2 = New-NAVAppObject -Dependencies @($app1)
         $app1.Dependencies = @([PSCustomObject]@{AppId = $app2.AppId }) # Creating circular dependency
         $appInfoList = @($app2, $app1)
-        { Get-SortedNAVAppInfo -appInfoList $appInfoList } | Should -Not -Throw
+        { Get-SortedNAVAppInfo -appInfoList $appInfoList } | Should -Throw
     }
 }
 
@@ -146,9 +146,15 @@ Describe "Application Dependency Sorting" {
         $result = Get-SortedNAVAppInfo -appInfoList $appInfoList
         $result.Count | Should -Be $appInfoList.Count
 
-        # Assertions to verify the sorting is correct would go here
-        # Example:
-        # $sortedList[0].Name | Should -Be "Application"
-        # Further assertions would depend on the implementation of Get-SortedAppList and the actual sorting logic
+        # Find indices of $oioubl and its dependencies in the sorted list
+        $index_oioubl = $result.IndexOf($oioubl)
+        $index_stdoioubl = $result.IndexOf($stdoioubl)
+        $index_core = $result.IndexOf($core)
+        $index_evm = $result.IndexOf($evm)
+
+        # Assert $oioubl is after its dependencies
+        $index_oioubl | Should -BeGreaterThan $index_stdoioubl
+        $index_oioubl | Should -BeGreaterThan $index_core
+        $index_oioubl | Should -BeGreaterThan $index_evm
     }
 }
